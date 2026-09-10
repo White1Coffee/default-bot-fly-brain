@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minecraft AI Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#070b12;
+      --panel:#0f1724;
+      --panel2:#111f32;
+      --line:#22334b;
+      --text:#f4f8ff;
+      --muted:#9aa9bd;
+      --accent:#6ee7b7;
+      --blue:#7dd3fc;
+      --warn:#fbbf24;
+      --danger:#fb7185;
+      --good:#34d399;
+      --shadow:0 24px 70px rgba(0,0,0,.28);
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(circle at 20% 0%,#16324a 0,var(--bg) 42rem); color:var(--text); }
+    button, input, select { font:inherit; }
+    button { border:0; border-radius:10px; background:#1d4ed8; color:white; padding:9px 12px; font-weight:800; cursor:pointer; }
+    button:hover { filter:brightness(1.1); }
+    button.danger { background:#be123c; }
+    input, select { min-width:0; border:1px solid #29425f; border-radius:10px; background:#07101b; color:white; padding:10px; }
+    input[readonly] { color:var(--muted); cursor:not-allowed; }
+    code { color:var(--blue); }
+    .app { min-height:100vh; display:grid; grid-template-columns:248px 1fr; }
+    aside { position:sticky; top:0; height:100vh; padding:20px 14px; border-right:1px solid var(--line); background:rgba(7,11,18,.88); }
+    .brand { display:flex; gap:12px; align-items:center; margin-bottom:22px; }
+    .logo { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--blue)); box-shadow:0 0 35px rgba(110,231,183,.25); }
+    .brand small { display:block; color:var(--muted); font-size:.72rem; font-weight:900; text-transform:uppercase; letter-spacing:.14em; }
+    .brand b { font-size:1.04rem; }
+    nav { display:grid; gap:7px; }
+    nav button { width:100%; text-align:left; border:1px solid transparent; background:transparent; color:var(--muted); border-radius:10px; }
+    nav button.active, nav button:hover { background:#132238; color:white; border-color:#29425f; }
+    main { width:100%; max-width:1440px; margin:auto; padding:22px; }
+    .top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:16px; }
+    .eyebrow { color:var(--accent); font-size:.72rem; font-weight:900; letter-spacing:.16em; text-transform:uppercase; }
+    h1 { margin:.2rem 0; font-size:clamp(1.7rem,3vw,2.7rem); }
+    h2 { margin:0; font-size:1.12rem; }
+    p { color:var(--muted); line-height:1.45; margin:.3rem 0 0; }
+    .status { display:flex; gap:8px; align-items:center; padding:10px 14px; border:1px solid rgba(52,211,153,.35); border-radius:999px; background:rgba(52,211,153,.1); color:var(--good); font-weight:900; white-space:nowrap; }
+    .status.offline { color:var(--warn); border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.08); }
+    .dot { width:9px; height:9px; border-radius:50%; background:currentColor; box-shadow:0 0 18px currentColor; }
+    .command { display:grid; grid-template-columns:1fr auto; gap:10px; padding:14px; border:1px solid var(--line); border-radius:16px; background:linear-gradient(135deg,rgba(17,31,50,.95),rgba(12,18,30,.95)); box-shadow:var(--shadow); margin-bottom:16px; }
+    #command { width:100%; font-size:1rem; padding:13px; }
+    .quick { grid-column:1/-1; display:flex; flex-wrap:wrap; gap:8px; }
+    .quick button { background:#132238; color:#cfe3f8; border:1px solid #29425f; padding:8px 10px; }
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(150px,1fr)); gap:12px; margin-bottom:16px; }
+    .card, section.panel { background:linear-gradient(145deg,rgba(17,31,50,.96),rgba(10,17,29,.96)); border:1px solid var(--line); border-radius:16px; padding:15px; box-shadow:var(--shadow); }
+    .metric span { color:var(--muted); font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; font-weight:900; }
+    .metric b { display:block; color:var(--text); font-size:1.32rem; margin-top:7px; overflow-wrap:anywhere; }
+    .bar { height:7px; background:#0a1320; border-radius:99px; overflow:hidden; margin-top:11px; }
+    .bar i { display:block; height:100%; background:linear-gradient(90deg,var(--accent),var(--blue)); border-radius:inherit; }
+    .position-value { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; width:100%; font-size:.9rem; }
+    .position-axis { display:flex; justify-content:space-between; gap:8px; min-width:0; padding:6px 8px; border:1px solid rgba(125,211,252,.3); border-radius:8px; background:#081321; }
+    .position-axis i { color:var(--muted); font-style:normal; font-weight:900; }
+    .position-axis strong { overflow:hidden; text-overflow:ellipsis; color:var(--blue); }
+    .position-axis.wide { grid-column:1/-1; }
+    .latest-chat { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:center; gap:12px; margin-bottom:16px; padding:12px 15px; }
+    .latest-chat-label { color:var(--blue); font-size:.72rem; font-weight:900; text-transform:uppercase; letter-spacing:.12em; white-space:nowrap; }
+    .latest-chat-message { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .latest-chat-time { color:var(--muted); font-size:.78rem; white-space:nowrap; }
+    .tab { display:none; }
+    .tab.active { display:block; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+    .panel-title { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+    .pill { display:inline-flex; align-items:center; width:max-content; max-width:100%; border:1px solid #29425f; background:#0d1a2c; color:var(--muted); border-radius:999px; padding:5px 9px; font-size:.78rem; font-weight:800; }
+    .muted { color:var(--muted); }
+    .item { display:flex; justify-content:space-between; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); }
+    .item:last-child { border-bottom:0; }
+    .item span:first-child { overflow-wrap:anywhere; }
+    .item input { width:72px; }
+    .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 12px; }
+    .toolbar input { flex:1; min-width:180px; }
+    .command-card { display:flex; flex-direction:column; gap:8px; min-height:150px; }
+    .command-card p { flex:1; margin:0; }
+    .recipe-card { display:flex; flex-direction:column; gap:8px; }
+    .recipe-meta { display:flex; flex-wrap:wrap; gap:6px; }
+    .knowledge-group { display:grid; gap:4px; margin-top:8px; }
+    .inventory-group { grid-column:1/-1; }
+    .inventory-shell { display:grid; gap:14px; }
+    .inventory-summary { display:flex; flex-wrap:wrap; gap:8px; align-items:center; color:var(--muted); }
+    .inventory-wrap { overflow:auto; border:1px solid var(--line); border-radius:8px; background:#303942; padding:12px; }
+    .mc-inventory { display:grid; grid-template-columns:repeat(9,44px); gap:3px; width:max-content; }
+    .equipment-row { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+    .equipment-slot { display:grid; gap:5px; justify-items:center; color:var(--muted); font-size:.72rem; font-weight:900; text-transform:uppercase; }
+    .slot { position:relative; width:44px; height:44px; background:#8b8b8b; border-top:3px solid #dadada; border-left:3px solid #dadada; border-right:3px solid #585858; border-bottom:3px solid #585858; }
+    .slot img { width:32px; height:32px; margin:3px; image-rendering:pixelated; }
+    .slot .empty-icon { width:32px; height:32px; margin:3px; opacity:.18; image-rendering:pixelated; }
+    .slot .count { position:absolute; right:3px; bottom:0; color:white; font-weight:900; text-shadow:2px 2px #333; pointer-events:none; }
+    .slot .durability { position:absolute; left:3px; right:3px; bottom:3px; height:4px; background:#191919; border:1px solid #111; }
+    .slot .durability i { display:block; height:100%; background:#5de56a; }
+    .slot .drop { position:absolute; top:1px; right:1px; width:17px; height:17px; min-height:0; padding:0; border-radius:3px; background:#8e3042; display:none; line-height:1; font-size:.7rem; }
+    .slot:hover .drop { display:block; }
+    .inventory-details { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:8px; }
+    .settings-form { display:grid; gap:14px; max-width:1100px; }
+    .settings-columns { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr); gap:18px; align-items:start; }
+    .settings-main, .settings-security { min-width:0; }
+    .security-list { display:grid; gap:6px; }
+    .player-identity { display:flex; align-items:center; gap:10px; min-width:0; }
+    .player-head { width:40px; height:40px; image-rendering:pixelated; border:1px solid #29425f; border-radius:6px; background:#07101b; flex:0 0 auto; }
+    .skin-settings { display:grid; grid-template-columns:minmax(0,1fr) 190px; gap:18px; align-items:start; }
+    .skin-preview { min-height:260px; display:grid; place-items:center; border:1px solid var(--line); border-radius:8px; background:#07101b; overflow:hidden; }
+    .skin-preview img { display:block; max-width:100%; max-height:250px; image-rendering:pixelated; object-fit:contain; }
+    .settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .settings-field { display:grid; gap:6px; color:var(--muted); font-size:.82rem; font-weight:800; }
+    .settings-field input, .settings-field select { width:100%; color:var(--text); font-weight:700; }
+    .pov-card { grid-column:span 2; min-height:480px; }
+    .pov-frame { position:relative; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:#06101c; min-height:430px; }
+    .pov-frame iframe { display:block; width:100%; height:460px; border:0; background:#06101c; }
+    .pov-offline { position:absolute; inset:0; display:grid; place-items:center; gap:10px; background:rgba(6,16,28,.88); text-align:center; z-index:2; }
+    .pov-offline.hidden { display:none; }
+    .viewer-link { color:var(--blue); text-decoration:none; font-weight:900; }
+    .viewer-link:hover { text-decoration:underline; }
+    .legend { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+    .legend span { display:inline-flex; align-items:center; gap:5px; color:var(--muted); font-size:.78rem; }
+    .legend i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .route-ok { color:var(--good); }
+    .route-warn { color:var(--warn); }
+    .route-bad { color:var(--danger); }
+    #taskList ul, #taskLog ul { margin:0; padding-left:20px; }
+    #taskList li, #taskLog li { margin:7px 0; }
+    .flybrain-grid { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(420px,1.1fr); gap:14px; align-items:start; }
+    .flybrain-hero { grid-column:1/-1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:14px; align-items:center; }
+    .flybrain-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
+    .flybrain-diagram { display:grid; gap:10px; }
+    .fly-step { display:grid; grid-template-columns:42px minmax(0,1fr); gap:10px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:12px; background:#081321; }
+    .fly-step i { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:linear-gradient(135deg,rgba(110,231,183,.24),rgba(125,211,252,.16)); color:var(--accent); font-style:normal; font-weight:900; }
+    .fly-step b { display:block; }
+    .flybrain-readout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    .flybrain-readout .item { background:#081321; border:1px solid var(--line); border-radius:10px; padding:10px; }
+    .flybrain-readout .item span:last-child { color:var(--blue); font-weight:900; overflow-wrap:anywhere; }
+    .chart-card { min-height:320px; }
+    .fly-chart-wrap { position:relative; height:245px; border:1px solid var(--line); border-radius:12px; background:#06101c; overflow:hidden; }
+    #flyBrainChart { width:100%; height:100%; display:block; }
+    .fly-led { display:inline-flex; align-items:center; gap:7px; }
+    .fly-led::before { content:''; width:9px; height:9px; border-radius:50%; background:var(--muted); box-shadow:0 0 14px currentColor; }
+    .fly-led.on { color:var(--good); }
+    .fly-led.on::before { background:var(--good); }
+    .fly-led.warn { color:var(--warn); }
+    .fly-led.warn::before { background:var(--warn); }
+    .fly-led.off { color:var(--muted); }
+    @media (max-width:900px) {
+      .flybrain-grid { grid-template-columns:1fr; }
+      .flybrain-hero { grid-template-columns:1fr; }
+      .flybrain-actions { justify-content:flex-start; }
+      .flybrain-readout { grid-template-columns:1fr; }
+      .app { grid-template-columns:1fr; }
+      aside { position:relative; height:auto; }
+      nav { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      main { padding:14px; }
+      .top { display:block; }
+      .status { width:max-content; margin-top:10px; }
+      .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .command { grid-template-columns:1fr; }
+      .latest-chat { grid-template-columns:1fr; gap:5px; }
+      .latest-chat-message { white-space:normal; overflow-wrap:anywhere; }
+      .pov-card { grid-column:span 1; }
+      .pov-frame iframe { height:340px; }
+      .settings-grid { grid-template-columns:1fr; }
+      .settings-columns { grid-template-columns:1fr; }
+      .skin-settings { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand"><div class="logo"></div><div><small>Minecraft agent</small><b>AI Control</b></div></div>
+      <nav id="tabs">
+        <button type="button" class="active" data-tab="dashboard">Dashboard</button>
+        <button type="button" data-tab="chat">Chat</button>
+        <button type="button" data-tab="inventory">Inventory</button>
+        <button type="button" data-tab="tasks">Tasks</button>
+        <button type="button" data-tab="flybrain">Flybrain</button>
+        <button type="button" data-tab="recipes">Recipes</button>
+        <button type="button" data-tab="discoveredRecipes">Discovered</button>
+        <button type="button" data-tab="knowledge">Knowledge</button>
+        <button type="button" data-tab="itemsKnowledge">Items</button>
+        <button type="button" data-tab="commands">Commands</button>
+        <button type="button" data-tab="settings">Settings</button>
+      </nav>
+    </aside>
+    <main>
+      <div class="top">
+        <div>
+          <div class="eyebrow">AI Dashboard</div>
+          <h1>Minecraft AI Control</h1>
+          <p>Live status, tasks, inventory, recipes, world memory and commands.</p>
+        </div>
+        <div id="connectedBadge" class="status"><i class="dot"></i><span id="connected">OFFLINE</span></div>
+      </div>
+
+      <form id="commandForm" class="command">
+        <input id="command" placeholder="Type chat or an AI command, for example ai status" autocomplete="off">
+        <button type="submit">Send</button>
+        <div id="quick" class="quick"></div>
+      </form>
+
+      <section class="metrics">
+        <div class="card metric"><span>HP</span><b id="health">?</b><div class="bar"><i id="healthBar" style="width:0%"></i></div></div>
+        <div class="card metric"><span>Food</span><b id="food">?</b><div class="bar"><i id="foodBar" style="width:0%"></i></div></div>
+        <div class="card metric"><span>Mode</span><b id="mode">?</b><div class="bar"><i style="width:100%"></i></div></div>
+        <div class="card metric"><span>Autonomy</span><b id="autonomy">?</b><div class="bar"><i style="width:100%"></i></div></div>
+        <div class="card metric"><span>XP</span><b id="xp">?</b><div class="bar"><i style="width:100%"></i></div></div>
+        <div class="card metric"><span>Position</span><b id="position">?</b></div>
+        <div class="card metric"><span>PvP</span><b id="pvp">?</b><div class="bar"><i style="width:100%"></i></div></div>
+        <div class="card metric"><span>Connection</span><b id="connectionText">?</b><div class="bar"><i style="width:100%"></i></div></div>
+      </section>
+
+      <section class="card latest-chat" aria-live="polite">
+        <span class="latest-chat-label">Latest Chat</span>
+        <span id="latestChatMessage" class="latest-chat-message muted">No chat messages yet</span>
+        <span id="latestChatTime" class="latest-chat-time"></span>
+      </section>
+
+      <section id="dashboard" class="tab active">
+        <div class="grid">
+          <div class="card"><div class="panel-title"><h2>Current Task</h2><span class="pill">Live</span></div><div id="taskList"><span class="muted">No active task</span></div></div>
+          <div class="card"><div class="panel-title"><h2>Food</h2><span class="pill">Inventory</span></div><div id="foodItems"><span class="muted">No food items</span></div></div>
+          <div class="card pov-card">
+            <div class="panel-title">
+              <h2>AI POV</h2>
+              <span id="pathStatus" class="pill">Path idle</span>
+            </div>
+            <div class="pov-frame">
+              <iframe id="botPov" title="Bot Minecraft POV" src="about:blank"></iframe>
+              <div id="viewerOffline" class="pov-offline">
+                <div>
+                  <h2>Viewer offline</h2>
+                  <p>Start or reload the AI POV viewer.</p>
+                  <button type="button" onclick="retryViewer()">Try again</button>
+                </div>
+              </div>
+            </div>
+            <div class="legend">
+              <span><i style="background:#6ee7b7"></i>First-person Mineflayer viewer</span>
+              <span><i style="background:#facc15"></i>Viewer port <a id="viewerLink" class="viewer-link" href="#" target="_blank" rel="noopener">Viewer not ready</a></span>
+            </div>
+          </div>
+          <div class="card"><div class="panel-title"><h2>Combat</h2><span class="pill">Learning</span></div><div id="combatStats" class="muted">No combat data</div></div>
+          <div class="card"><div class="panel-title"><h2>Recovery</h2><span class="pill">Watchdog</span></div><div id="recovery" class="muted"></div></div>
+          <div class="card"><div class="panel-title"><h2>Furnace Debug</h2><span class="pill">Live slots</span></div><div id="furnaceDebug" class="muted">No furnace activity</div></div>
+          <div class="card"><div class="panel-title"><h2>Planner</h2><span class="pill">AI</span></div><div id="planner" class="muted">No planner data</div></div>
+          <div class="card"><div class="panel-title"><h2>World Memory</h2><span class="pill">Server</span></div><div id="worldMemory" class="muted">No world memory loaded</div></div>
+        </div>
+      </section>
+
+      <section id="chat" class="tab">
+        <div class="panel-title"><h2>Chat History</h2><span class="pill">Recent</span></div>
+        <div id="chatHistory" class="card"><span class="muted">No chat messages yet</span></div>
+      </section>
+
+      <section id="inventory" class="tab">
+        <div class="panel-title"><h2>Inventory</h2><span id="inventoryCount" class="pill">0 items</span></div>
+        <div class="toolbar"><input id="inventorySearch" placeholder="Search inventory item"></div>
+        <div id="inventoryList" class="grid"></div>
+      </section>
+
+      <section id="tasks" class="tab">
+        <div class="panel-title"><h2>Task Console</h2><span class="pill">Recent</span></div>
+        <div id="taskLog" class="card"><span class="muted">No task log yet</span></div>
+      </section>
+
+
+      <section id="flybrain" class="tab">
+        <div class="flybrain-grid">
+          <div class="card flybrain-hero">
+            <div>
+              <div class="panel-title"><h2>Flybrain Control</h2><span id="flyBrainBadge" class="pill fly-led off">Offline</span></div>
+              <p>The fly connectome now drives reflexes, urges, simple actions and phase 4 planning. It can ask Mineflayer to route, retreat, collect drops, dig blocks, attack threats, equip gear, craft basic items, manage inventory, place support blocks and explore.</p>
+            </div>
+            <div class="flybrain-actions">
+              <button type="button" onclick="send('ai flybrain on')">Start flybrain</button>
+              <button type="button" onclick="send('ai flybrain status')">Status</button>
+              <button type="button" class="danger" onclick="send('ai flybrain off')">Stop flybrain</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title"><h2>How it works</h2><span class="pill">Sensors to motors</span></div>
+            <div class="flybrain-diagram">
+              <div class="fly-step"><i>1</i><span><b>Minecraft senses</b><span class="muted">Nearby entities, light level, damage, hunger, movement and air/ground state are sampled.</span></span></div>
+              <div class="fly-step"><i>2</i><span><b>Fly brain bridge</b><span class="muted">Node sends those signals to the Java connectome simulator as tiny sensory frames.</span></span></div>
+              <div class="fly-step"><i>3</i><span><b>Motor decoder</b><span class="muted">The connectome returns mode, forward drive, yaw drive, stop drive, jump, feeding and grooming signals.</span></span></div>
+              <div class="fly-step"><i>4</i><span><b>Mineflayer controls</b><span class="muted">The bot translates the motor signal into keyboard-like controls: forward, back, left, right, jump and look.</span></span></div>
+              <div class="fly-step"><i>5</i><span><b>Phase 2 urges</b><span class="muted">Strong hunger can route to food. Strong danger can route away from hostile entities.</span></span></div>
+              <div class="fly-step"><i>6</i><span><b>Phase 3 hands</b><span class="muted">Nearby drops, useful blocks and hostile mobs can trigger collect, dig, attack or equip actions.</span></span></div>
+              <div class="fly-step"><i>7</i><span><b>Phase 4 planning</b><span class="muted">Inventory, crafting, support-block placement, exploration drive and rest mode are handled by Mineflayer when the flybrain asks for them.</span></span></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title"><h2>Live readout</h2><span class="pill">Bridge</span></div>
+            <div id="flyBrainReadout" class="flybrain-readout"><span class="muted">No flybrain data yet</span></div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="panel-title"><h2>Live graph</h2><span class="pill">Last 60 updates</span></div>
+            <div class="fly-chart-wrap"><canvas id="flyBrainChart" width="900" height="300"></canvas></div>
+            <div class="legend">
+              <span><i style="background:#6ee7b7"></i>Forward</span>
+              <span><i style="background:#7dd3fc"></i>Yaw</span>
+              <span><i style="background:#fbbf24"></i>Stop</span>
+              <span><i style="background:#fb7185"></i>Spikes</span>
+              <span><i style="background:#c084fc"></i>Urge</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title"><h2>What you can do</h2><span class="pill">Commands</span></div>
+            <div class="knowledge-group">
+              <div class="item"><span><code>ai flybrain on</code></span><button type="button" onclick="send('ai flybrain on')">Use</button></div>
+              <div class="item"><span><code>ai flybrain status</code></span><button type="button" onclick="send('ai flybrain status')">Use</button></div>
+              <div class="item"><span><code>ai flybrain off</code></span><button type="button" class="danger" onclick="send('ai flybrain off')">Use</button></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title"><h2>Good to know</h2><span class="pill">Experimental</span></div>
+            <p>Flybrain mode can now trigger basic crafting, inventory cleanup, support-block placement, exploring and resting. It is still experimental: normal AI commands remain the most reliable choice for big goals like long mining trips, building plans and server tasks.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="recipes" class="tab">
+        <div class="panel-title"><div><h2>Recipes</h2><span id="recipesCount" class="muted">No recipes received yet</span></div><input id="recipesSearch" placeholder="Search recipe"></div>
+        <div id="recipesList" class="grid"></div>
+      </section>
+
+      <section id="discoveredRecipes" class="tab">
+        <div class="panel-title"><div><h2>Discovered Recipes</h2><span id="discoveredRecipesCount" class="muted">No recipes discovered yet</span></div><input id="discoveredRecipesSearch" placeholder="Search discovered recipe"></div>
+        <div id="discoveredRecipesList" class="grid"></div>
+      </section>
+
+      <section id="knowledge" class="tab">
+        <div class="panel-title"><h2>Knowledge</h2><span class="pill">Learning</span></div>
+        <div id="knowledgeList" class="grid"></div>
+      </section>
+
+      <section id="itemsKnowledge" class="tab">
+        <div class="panel-title"><h2>Items</h2><span class="pill">Editable</span></div>
+        <div id="itemsKnowledgeList" class="grid"></div>
+      </section>
+
+      <section id="commands" class="tab">
+        <div class="panel-title"><h2>Commands</h2><span class="pill">Click to use</span></div>
+        <div id="commandsList" class="grid"></div>
+      </section>
+
+      <section id="settings" class="tab">
+        <div class="panel-title"><h2>Connection Settings</h2><span class="pill">Restart required</span></div>
+        <form id="settingsForm" class="settings-form">
+          <div class="settings-columns">
+            <div class="settings-main card">
+              <div class="settings-grid">
+                <label class="settings-field">Server host<input id="settingsHost" required autocomplete="off"></label>
+                <label class="settings-field">Server port<input id="settingsPort" type="number" min="1" max="65535" required></label>
+                <label class="settings-field">Username / Microsoft email<input id="settingsUsername" required autocomplete="username"></label>
+                <label class="settings-field">Authentication<select id="settingsAuth"><option value="microsoft">Microsoft</option><option value="offline">Offline</option></select></label>
+                <label class="settings-field">Minecraft version<select id="settingsVersion"></select></label>
+                <label class="settings-field">World ID<input id="settingsWorldId" required autocomplete="off"></label>
+                <label class="settings-field">Data profile<input id="settingsDataProfile" required autocomplete="off"></label>
+              </div>
+            </div>
+            <div class="settings-security card">
+              <div class="panel-title"><div><h2>Command Security</h2><p>Owner and allowed Minecraft players can use AI commands.</p></div><span class="pill">Whitelisted</span></div>
+              <label class="settings-field">Command owner<input id="settingsOwnerPlayer" placeholder="Minecraft username" autocomplete="off"></label>
+              <div id="ownerPreview" class="security-list"></div>
+              <div class="toolbar"><input id="whitelistInput" placeholder="Allowed player username" autocomplete="off"><button type="button" id="whitelistAdd">Add player</button></div>
+              <div id="whitelistList" class="security-list"><span class="muted">No players whitelisted</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="panel-title"><div><h2>Bot Skin</h2><p>Microsoft auth changes the account skin. Offline auth requires SkinsRestorer. Save applies it immediately.</p></div><span class="pill">On save / join</span></div>
+            <div class="skin-settings">
+              <div class="settings-grid">
+                <label class="settings-field">Skin source<select id="settingsOfflineSkinMode"><option value="off">Disabled</option><option value="player">Minecraft player</option><option value="url">Public PNG URL</option></select></label>
+                <label class="settings-field">Arm model<select id="settingsOfflineSkinVariant"><option value="classic">Classic</option><option value="slim">Slim</option></select></label>
+                <label class="settings-field">Player name or PNG URL<input id="settingsOfflineSkinValue" placeholder="Notch or https://example.com/skin.png" autocomplete="off"></label>
+              </div>
+              <div id="offlineSkinPreview" class="skin-preview"><span class="muted">Skin preview</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="panel-title"><h2>Data Management</h2><span class="pill">Backups</span></div>
+            <div class="toolbar"><button type="button" id="createBackup">Create backup</button><button type="button" id="restoreBackup">Restore latest backup</button><button type="button" class="danger" id="resetWorldMemory">Reset current world memory</button></div>
+            <p id="backupStatus">Backups contain settings, memory, knowledge and worlds.</p>
+          </div>
+          <div class="card toolbar"><button type="button" id="settingsSave">Save</button><button type="submit">Save and restart AI</button><span id="settingsStatus" class="muted"></span></div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io()
+    let knownRecipes = []
+    let discoveredRecipes = {}
+    let latestData = {}
+    let settingsInitialized = false
+    let whitelistedPlayers = []
+    const flyBrainSeries = []
+    const flyBrainMaxPoints = 60
+
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]))
+
+    const setHtml = (id, html) => {
+      const element = document.getElementById(id)
+      if (element) element.innerHTML = html
+    }
+
+    const titleCase = value => String(value || '').replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+    const percent = value => Math.max(0, Math.min(100, Math.round((Number(value) || 0) / 20 * 100)))
+    const APP_TIME_ZONE = 'Europe/Amsterdam'
+    const formatDate = value => value
+      ? new Date(value).toLocaleString('nl-NL', { timeZone: APP_TIME_ZONE })
+      : 'unknown'
+
+    const commandInfo = {
+      'ai help': ['Basics', 'Shows the available help categories.'],
+      'ai help <category>': ['Basics', 'Shows commands from one help category. Example: ai help auto.'],
+      'ai inv': ['Basics', 'Shows the items in the bot inventory.'],
+      'ai status': ['Basics', 'Shows HP, food, XP, PvP and autonomy.'],
+      'ai info': ['Basics', 'Shows the current task and recent silent background activity.'],
+      'ai rejoin': ['Basics', 'Disconnects and rejoins the Minecraft server.'],
+      'ai follow': ['Movement', 'Follows the player who sent the command.'],
+      'ai stop': ['Control', 'Stops the current task and disables autonomy.'],
+      'ai gather <item> <amount>': ['Resources', 'Gathers a target amount. Example: ai gather diamond 3.'],
+      'ai explore': ['Movement', 'Makes the bot explore nearby terrain.'],
+      'ai auto on': ['Autonomy', 'Lets the bot choose tasks by itself.'],
+      'ai auto off': ['Autonomy', 'Stops active autonomous tasks and disables autonomy.'],
+      'ai auto mine': ['Autonomy', 'Trains mining decisions, ore memory and stripmine behavior.'],
+      'ai auto farm': ['Autonomy', 'Trains farming, harvesting, replanting and animal breeding.'],
+      'ai auto combat': ['Autonomy', 'Trains combat survival against hostile mobs.'],
+      'ai auto movement': ['Autonomy', 'Trains exploration, routing and unstuck recovery.'],
+      'ai auto crafting': ['Autonomy', 'Trains crafting and recipe progression.'],
+      'ai auto world': ['Autonomy', 'Trains world memory by scanning and exploring locations.'],
+      'ai auto progression': ['Autonomy', 'Trains long-term gear and survival progression.'],
+      'ai auto general': ['Autonomy', 'Clears the training focus and returns to general autonomy.'],
+      'ai viewer on': ['Viewer', 'Starts the first-person AI POV viewer.'],
+      'ai viewer off': ['Viewer', 'Stops the first-person AI POV viewer.'],
+      'ai flybrain on': ['Flybrain', 'Lets the fly connectome control movement/reflexes.'],
+      'ai flybrain off': ['Flybrain', 'Stops flybrain control and returns to normal commands.'],
+      'ai flybrain status': ['Flybrain', 'Shows bridge status, motor mode, forward/yaw values and spike count.'],
+      'ai pickup items': ['Inventory', 'Moves to dropped items nearby.'],
+      'ai storage': ['Inventory', 'Stores inventory in a nearby chest or barrel.'],
+      'ai dump junk': ['Inventory', 'Drops or stores low-value junk items.'],
+      'ai sort': ['Inventory', 'Sorts nearby storage when supported.'],
+      'ai equip armor': ['Combat', 'Equips the best available armor.'],
+      'ai combat learn': ['Combat', 'Trains combat as the main task and tracks success rate/deaths.'],
+      'ai hitman <playername>': ['Combat', 'Hunts a player until one kill or ai hitman stop.'],
+      'ai hitman stop': ['Combat', 'Stops only the active hitman task.'],
+      'ai guard <playername>': ['Combat', 'Follows and protects a player against mobs and attackers.'],
+      'ai guard ally <playername>': ['Combat', 'Adds a protected guard ally. Maximum: 5 players.'],
+      'ai recipes': ['Crafting', 'Shows how many recipes the bot has saved.'],
+      'ai get stronger': ['Progression', 'Works toward better armor, tools and progression.'],
+      'ai pvp': ['Combat', 'Toggles defense against players.'],
+      'ai craft <item>': ['Crafting', 'Tries to craft an item. Example: ai craft stone_pickaxe.'],
+      'ai go to <x> <y> <z>': ['Movement', 'Walks to the specified coordinates.'],
+      'ai set home': ['World', 'Saves the current position as home for this server.'],
+      'ai home': ['World', 'Returns to the saved home position.'],
+      'ai remember village': ['World', 'Saves the current position as a village.'],
+      'ai remember mine': ['World', 'Saves the current position as a mine.'],
+      'ai memories': ['World', 'Shows remembered locations for this server.'],
+      'ai farm': ['Farming', 'Maintains food by harvesting, replanting and breeding animals.'],
+      'ai harvest': ['Farming', 'Harvests mature nearby crops.'],
+      'ai replant': ['Farming', 'Replants nearby empty farmland.'],
+      'ai breed animals': ['Farming', 'Breeds nearby animals when the bot has the right food.'],
+      'ai cave': ['Mining', 'Explores caves and remembers cave entrances.'],
+      'ai nearest cave': ['Mining', 'Returns to the nearest remembered cave.'],
+      'ai return cave': ['Mining', 'Returns to the nearest remembered cave.'],
+      'ai stripmine': ['Mining', 'Starts a stripmine for diamonds around Y -54.'],
+      'ai diamonds': ['Mining', 'Starts diamond-focused mining.'],
+      'ai iron': ['Mining', 'Starts iron-focused mining.'],
+      'ai beat minecraft': ['Progression', 'Starts the long-term Ender Dragon progression planner.']
+    }
+
+    function openTab(id) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.id === id))
+      document.querySelectorAll('#tabs button').forEach(button => button.classList.toggle('active', button.dataset.tab === id))
+    }
+
+    document.querySelectorAll('#tabs button').forEach(button => {
+      button.addEventListener('click', () => openTab(button.dataset.tab))
+    })
+
+    function send(command) {
+      command = String(command || '').trim()
+      if (!command) return
+      socket.emit('command', command)
+      document.getElementById('command').value = ''
+    }
+
+    function fillCommand(command) {
+      const input = document.getElementById('command')
+      input.value = command
+      input.focus()
+    }
+
+    window.fillCommand = fillCommand
+
+    function publicViewerUrl(data = latestData) {
+      const port = data?.viewer?.port || 3001
+      return `http://${location.hostname || 'localhost'}:${port}/`
+    }
+
+    function updateViewerLink(data = latestData) {
+      const url = publicViewerUrl(data)
+      const link = document.getElementById('viewerLink')
+      if (link) {
+        link.href = url
+        link.textContent = url
+      }
+      return url
+    }
+
+    function retryViewer() {
+      const frame = document.getElementById('botPov')
+      document.getElementById('viewerOffline').classList.remove('hidden')
+      socket.emit('command', 'ai viewer on')
+      frame.src = `${updateViewerLink()}?retry=${Date.now()}`
+      setTimeout(() => {
+        const overlay = document.getElementById('viewerOffline')
+        if (overlay && !overlay.classList.contains('hidden')) overlay.classList.remove('hidden')
+      }, 4000)
+    }
+    window.retryViewer = retryViewer
+
+    document.getElementById('botPov').addEventListener('load', () => {
+      document.getElementById('viewerOffline').classList.add('hidden')
+    })
+
+    document.getElementById('commandForm').addEventListener('submit', event => {
+      event.preventDefault()
+      send(document.getElementById('command').value)
+    })
+    document.getElementById('settingsForm').addEventListener('submit', event => {
+      event.preventDefault()
+      setHtml('settingsStatus', 'Saving and restarting...')
+      saveBotSettings(true)
+    })
+    document.getElementById('settingsSave').addEventListener('click', () => {
+      setHtml('settingsStatus', 'Saving...')
+      saveBotSettings(false)
+    })
+    document.getElementById('createBackup').addEventListener('click', () => socket.emit('runtime-backup:create'))
+    document.getElementById('restoreBackup').addEventListener('click', () => {
+      if (confirm('Restore the latest backup and restart the AI?')) socket.emit('runtime-backup:restore-latest')
+    })
+    document.getElementById('resetWorldMemory').addEventListener('click', () => {
+      if (confirm('Reset memory for the current World ID? A backup will be created first.')) socket.emit('world-memory:reset')
+    })
+    document.getElementById('whitelistAdd').addEventListener('click', addWhitelistedPlayer)
+    document.getElementById('whitelistInput').addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        addWhitelistedPlayer()
+      }
+    })
+    document.getElementById('settingsOwnerPlayer').addEventListener('input', renderOwnerPreview)
+    document.getElementById('settingsAuth').addEventListener('change', renderOfflineSkinPreview)
+    document.getElementById('settingsOfflineSkinMode').addEventListener('change', renderOfflineSkinPreview)
+    document.getElementById('settingsOfflineSkinValue').addEventListener('input', renderOfflineSkinPreview)
+    document.getElementById('settingsOfflineSkinVariant').addEventListener('change', renderOfflineSkinPreview)
+    const playerHeadUrl = name => `https://mc-heads.net/avatar/${encodeURIComponent(name)}/40/nohelm.png`
+    const playerIdentity = (name, label = '') => `<span class="player-identity"><img class="player-head" src="${esc(playerHeadUrl(name))}" alt="" onerror="this.style.visibility='hidden'"><span><b>${esc(name)}</b>${label ? `<br><span class="muted">${esc(label)}</span>` : ''}</span></span>`
+    function renderOwnerPreview() {
+      const name = document.getElementById('settingsOwnerPlayer').value.trim()
+      setHtml('ownerPreview', name ? `<div class="item">${playerIdentity(name, 'Owner')}</div>` : '<span class="muted">No command owner set</span>')
+    }
+    function renderOfflineSkinPreview() {
+      const mode = document.getElementById('settingsOfflineSkinMode').value
+      const value = document.getElementById('settingsOfflineSkinValue').value.trim()
+      const auth = document.getElementById('settingsAuth').value
+      const variant = document.getElementById('settingsOfflineSkinVariant')
+      const variantApplies = auth === 'microsoft' && mode === 'url'
+      variant.disabled = !variantApplies
+      variant.title = variantApplies
+        ? 'Minecraft Services requires a classic or slim model for raw PNG URLs.'
+        : (mode === 'player' ? 'Player skins automatically use that player skin model.' : 'Offline URL skins let the server skin plugin choose the model.')
+      if (mode === 'off' || !value) {
+        setHtml('offlineSkinPreview', '<span class="muted">Skin preview</span>')
+        return
+      }
+      const source = mode === 'player'
+        ? `https://mc-heads.net/body/${encodeURIComponent(value)}/180`
+        : value
+      setHtml('offlineSkinPreview', `<img src="${esc(source)}" alt="Offline skin preview" onerror="this.parentElement.innerHTML='<span class=&quot;muted&quot;>Preview unavailable</span>'">`)
+    }
+    function addWhitelistedPlayer() {
+      const input = document.getElementById('whitelistInput')
+      const name = input.value.trim()
+      if (!/^[A-Za-z0-9_]{1,16}$/.test(name)) {
+        setHtml('settingsStatus', 'Player names may only contain letters, numbers and underscores, up to 16 characters.')
+        return
+      }
+      if (!name || whitelistedPlayers.some(player => player.toLowerCase() === name.toLowerCase())) return
+      whitelistedPlayers.push(name)
+      input.value = ''
+      renderWhitelist()
+    }
+    function removeWhitelistedPlayer(name) {
+      whitelistedPlayers = whitelistedPlayers.filter(player => player !== name)
+      renderWhitelist()
+    }
+    window.removeWhitelistedPlayer = removeWhitelistedPlayer
+    function renderWhitelist() {
+      setHtml('whitelistList', whitelistedPlayers.length
+        ? whitelistedPlayers.map(name => `<div class="item">${playerIdentity(name, 'Allowed player')}<button type="button" class="danger whitelist-remove" data-player="${esc(encodeURIComponent(name))}">Remove</button></div>`).join('')
+        : '<span class="muted">No allowed players. Only the owner and HUD can use commands.</span>')
+      document.querySelectorAll('.whitelist-remove').forEach(button => {
+        button.addEventListener('click', () => removeWhitelistedPlayer(decodeURIComponent(button.dataset.player)))
+      })
+    }
+    function saveBotSettings(restart) {
+      socket.emit('bot-settings:save', {
+        host: document.getElementById('settingsHost').value,
+        port: Number(document.getElementById('settingsPort').value),
+        username: document.getElementById('settingsUsername').value,
+        auth: document.getElementById('settingsAuth').value,
+        version: document.getElementById('settingsVersion').value,
+        worldId: document.getElementById('settingsWorldId').value,
+        dataProfile: document.getElementById('settingsDataProfile').value,
+        ownerPlayer: document.getElementById('settingsOwnerPlayer').value,
+        offlineSkinMode: document.getElementById('settingsOfflineSkinMode').value,
+        offlineSkinValue: document.getElementById('settingsOfflineSkinValue').value,
+        offlineSkinVariant: document.getElementById('settingsOfflineSkinVariant').value,
+        whitelistedPlayers,
+        restart
+      })
+    }
+    document.getElementById('inventorySearch').addEventListener('input', () => renderInventory(latestData.inventory, latestData.equipment))
+    document.getElementById('recipesSearch').addEventListener('input', renderRecipes)
+    document.getElementById('discoveredRecipesSearch').addEventListener('input', renderDiscoveredRecipes)
+
+    function formatMode(mode) {
+      mode = String(mode || 'idle')
+      if (mode.startsWith('defense:')) return `Defending: ${titleCase(mode.slice('defense:'.length))}`
+      return titleCase(mode)
+    }
+
+    function formatPosition(position) {
+      return position
+        ? `<span class="position-value"><span class="position-axis"><i>X</i><strong>${esc(position.x)}</strong></span><span class="position-axis"><i>Y</i><strong>${esc(position.y)}</strong></span><span class="position-axis wide"><i>Z</i><strong>${esc(position.z)}</strong></span></span>`
+        : '?'
+    }
+
+    function dropItem(slot, count) {
+      const input = document.getElementById(`drop-${slot}`)
+      socket.emit('inventory:drop', { slot, amount:Number(input?.value || count) })
+    }
+
+    function inventorySlot(item, slot = null, emptyIcon = '') {
+      if (!item) return `<div class="slot" title="Empty slot ${esc(slot ?? '')}">${emptyIcon ? `<img class="empty-icon" src="${esc(emptyIcon)}" alt="">` : ''}</div>`
+      const name = item.name || 'item'
+      const icon = `<img src="${esc(item.icon || '/textures/items/barrier.png')}" alt="">`
+      const durability = item.durability && item.durability.max
+        ? `<span class="durability"><i style="width:${Math.max(0, Math.min(100, Math.round((Number(item.durability.remaining) / Number(item.durability.max)) * 100)))}%"></i></span>`
+        : ''
+      return `<div class="slot" title="${esc(item.count)}x ${esc(name)} | slot ${esc(item.slot)}">
+        ${icon}
+        <span class="count">${Number(item.count) > 1 ? esc(item.count) : ''}</span>
+        ${durability}
+        <button type="button" class="drop" onclick="dropItem(${Number(item.slot)}, ${Number(item.count)})">x</button>
+      </div>`
+    }
+
+    function equipmentSlot(label, item, emptyIcon) {
+      return `<div class="equipment-slot"><span>${esc(label)}</span>${inventorySlot(item, label, emptyIcon)}</div>`
+    }
+    window.dropItem = dropItem
+
+    function forgetRecipe(item) {
+      socket.emit('recipe:forget', item)
+    }
+    window.forgetRecipe = forgetRecipe
+
+    function countObjectValues(value) {
+      return Object.values(value || {}).reduce((total, item) => total + (Number(item) || 0), 0)
+    }
+
+    function renderLearningList(entries) {
+      entries = Array.isArray(entries) ? entries : []
+      return entries.length
+        ? entries.map(entry => `<div class="item"><span>${esc(entry.name)}</span><span class="pill">score ${esc(entry.score ?? 0)}</span></div>`).join('')
+        : '<span class="muted">No experience yet</span>'
+    }
+
+    function renderHotChunks(entries) {
+      entries = Array.isArray(entries) ? entries : []
+      return entries.length
+        ? entries.map(entry => `<div class="item"><span>${esc(entry.item)} @ chunk ${esc(entry.chunk)}</span><span class="pill">${esc(entry.mined || 0)} / ${esc(entry.sightings || 0)}</span></div>`).join('')
+        : '<span class="muted">No ore memory yet</span>'
+    }
+
+    function renderToolUsage(entries) {
+      entries = Array.isArray(entries) ? entries : []
+      return entries.length
+        ? entries.map(entry => `<div class="item"><span>${esc(entry.block)}</span><span class="pill">${esc(entry.preferredTool || 'hand')}</span></div>`).join('')
+        : '<span class="muted">No tool knowledge yet</span>'
+    }
+
+    function renderKnowledgeGroup(title, html) {
+      return `<div class="knowledge-group"><span class="muted">${esc(title)}</span>${html}</div>`
+    }
+
+    function renderKnowledge(data) {
+      const knowledge = data?.knowledge || {}
+      const cards = [
+        ['Mining', [
+          renderKnowledgeGroup('Best blocks', renderLearningList(knowledge.mining?.learnedBlocks)),
+          renderKnowledgeGroup('Block tools', renderToolUsage(knowledge.mining?.toolUsage)),
+          renderKnowledgeGroup('Ore memory', renderHotChunks(knowledge.mining?.hotChunks))
+        ].join(''), `Mined: ${countObjectValues(knowledge.mining?.stats?.blocksMined)} | Failed: ${countObjectValues(knowledge.mining?.stats?.failedMines)}`],
+        ['Crafting', renderLearningList(knowledge.crafting?.learnedItems), `Crafted: ${countObjectValues(knowledge.crafting?.stats?.crafted)} | Recipes: ${Object.keys(knowledge.crafting?.discoveredRecipes || {}).length}`],
+        ['Combat', [
+          renderKnowledgeGroup('Mobs', renderLearningList(knowledge.combat?.learnedMobs)),
+          renderKnowledgeGroup('Tactics', renderLearningList(knowledge.combat?.learnedTactics)),
+          renderKnowledgeGroup('Weapons', renderLearningList(knowledge.combat?.learnedWeapons)),
+          renderKnowledgeGroup('Armor', renderLearningList(knowledge.combat?.learnedArmor))
+        ].join(''), `Encounters: ${countObjectValues(knowledge.combat?.stats?.encounters)} | Finished: ${knowledge.combat?.stats?.finishedFights || 0}`],
+        ['Movement', renderLearningList(knowledge.movement?.learnedRecovery), `Stuck: ${knowledge.movement?.stats?.stuckEvents || 0} | Watchdog: ${(knowledge.movement?.stats?.watchdogWakes || 0) + (knowledge.movement?.stats?.watchdogResets || 0) + (knowledge.movement?.stats?.watchdogPathResets || 0)}`]
+      ]
+      setHtml('knowledgeList', cards.map(([title, body, footer]) => `<div class="card command-card"><span class="pill">${esc(title)}</span><div>${body}</div><p>${esc(footer)}</p></div>`).join(''))
+    }
+
+    function addItemKnowledge(category) {
+      const input = document.getElementById(`item-knowledge-${category}`)
+      const item = String(input?.value || '').trim().toLowerCase()
+      if (!item) return
+      socket.emit('items-knowledge:add', { category, item })
+      input.value = ''
+    }
+    window.addItemKnowledge = addItemKnowledge
+
+    function removeItemKnowledge(category, item) {
+      socket.emit('items-knowledge:remove', { category, item })
+    }
+    window.removeItemKnowledge = removeItemKnowledge
+
+    function renderItemsKnowledge(data) {
+      const categories = data?.itemsKnowledge?.categories || {}
+      const stats = data?.itemsKnowledge?.stats?.pickedUp || {}
+      const active = document.activeElement
+      const activeId = active?.id || ''
+      const activeValue = activeId.startsWith('item-knowledge-') ? active.value : null
+      const cards = Object.entries(categories).map(([category, entries]) => {
+        entries = Array.isArray(entries) ? entries : []
+        return `<div class="card command-card"><span class="pill">${esc(titleCase(category))}</span><div class="toolbar"><input id="item-knowledge-${esc(category)}" placeholder="item or keyword"><button type="button" onclick="addItemKnowledge('${esc(category)}')">Add</button></div><div>${entries.length ? entries.map(item => `<div class="item"><span>${esc(item)}</span><button type="button" class="danger" onclick="removeItemKnowledge('${esc(category)}', '${esc(item)}')">Remove</button></div>`).join('') : '<span class="muted">Empty category</span>'}</div><p>Picked up: ${esc(Object.entries(stats).filter(([name]) => entries.some(entry => name === entry || name.includes(entry))).reduce((total, [, count]) => total + Number(count || 0), 0))}</p></div>`
+      })
+      setHtml('itemsKnowledgeList', cards.join('') || '<span class="muted">No item knowledge received yet</span>')
+      if (activeValue !== null) {
+        const next = document.getElementById(activeId)
+        if (next) {
+          next.value = activeValue
+          next.focus()
+        }
+      }
+    }
+
+    function renderRecipes() {
+      const query = document.getElementById('recipesSearch').value.trim().toLowerCase()
+      const entries = knownRecipes.filter(recipe => {
+        const output = typeof recipe === 'string' ? recipe : recipe.output
+        const station = typeof recipe === 'string' ? 'inventory' : recipe.station
+        const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
+        return [output, station, ...ingredients].join(' ').toLowerCase().includes(query)
+      })
+      setHtml('recipesCount', entries.length ? `${entries.length} of ${knownRecipes.length} recipes` : 'No recipes received yet')
+      setHtml('recipesList', entries.length ? entries.slice(0, 240).map(recipe => {
+        const output = typeof recipe === 'string' ? recipe : recipe.output
+        const count = typeof recipe === 'string' ? 1 : recipe.count
+        const station = typeof recipe === 'string' ? 'inventory' : recipe.station
+        const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
+        return `<div class="card recipe-card"><div class="item"><code>${esc(output)}</code><button type="button" onclick="fillCommand('ai craft ${esc(output)}')">Craft</button></div><div class="recipe-meta"><span class="pill">${esc(station.replaceAll('_', ' '))}</span><span class="pill">${esc(count || 1)}x</span></div><p>${ingredients.length ? esc(ingredients.join(', ')) : 'Recipe details unavailable'}</p></div>`
+      }).join('') : '<span class="muted">No recipes found</span>')
+    }
+
+    function renderDiscoveredRecipes() {
+      const query = document.getElementById('discoveredRecipesSearch').value.trim().toLowerCase()
+      const entries = Object.entries(discoveredRecipes || {})
+        .filter(([name]) => name.toLowerCase().includes(query))
+        .sort(([left], [right]) => left.localeCompare(right))
+      setHtml('discoveredRecipesCount', entries.length ? `${entries.length} of ${Object.keys(discoveredRecipes).length} discovered recipes` : 'No recipes discovered yet')
+      setHtml('discoveredRecipesList', entries.length ? entries.map(([name, info]) => `<div class="card recipe-card"><div class="item"><code>${esc(name)}</code><button type="button" onclick="fillCommand('ai craft ${esc(name)}')">Craft</button></div><div class="recipe-meta"><span class="pill">Discovered</span><span class="pill">${esc(formatDate(info?.discoveredAt))}</span></div><button type="button" class="danger" onclick="forgetRecipe('${esc(name)}')">Forget</button></div>`).join('') : '<span class="muted">No recipes discovered yet</span>')
+    }
+
+    function renderWorldMemory(memory) {
+      if (!memory) return setHtml('worldMemory', '<span class="muted">No world memory loaded</span>')
+      const home = memory.home ? `${memory.home.x} ${memory.home.y} ${memory.home.z}` : 'not set'
+      setHtml('worldMemory', `<div class="item"><span>World</span><span class="pill">${esc(memory.id || 'unknown')}</span></div><div class="item"><span>Home</span><span>${esc(home)}</span></div><div class="item"><span>Villages</span><span>${esc(memory.villages?.length || 0)}</span></div><div class="item"><span>Mines</span><span>${esc(memory.mines?.length || 0)}</span></div><div class="item"><span>Caves</span><span>${esc(memory.caves?.length || 0)}</span></div><div class="item"><span>Storage</span><span>${esc(memory.storage?.length || 0)}</span></div>`)
+    }
+
+    function renderCombatStats(metrics) {
+      if (!metrics) return setHtml('combatStats', '<span class="muted">No combat data</span>')
+      const deaths = Object.entries(metrics.deathsByCause || {})
+        .sort(([, left], [, right]) => Number(right) - Number(left))
+        .slice(0, 6)
+        .map(([cause, count]) => `<div class="item"><span>${esc(titleCase(cause))}</span><span class="pill">${esc(count)}</span></div>`)
+        .join('') || '<span class="muted">No deaths recorded</span>'
+      setHtml('combatStats', `<div class="item"><span>Success rate</span><span class="pill">${esc(metrics.successRate || 0)}%</span></div><div class="item"><span>Wins</span><span>${esc(metrics.wins || 0)}</span></div><div class="item"><span>Losses/deaths</span><span>${esc(metrics.losses || 0)}</span></div><div class="item"><span>Training</span><span>${metrics.training ? 'ON' : 'OFF'}</span></div><div class="knowledge-group"><span class="muted">Deaths by cause</span>${deaths}</div>`)
+    }
+
+    function renderTasks(data) {
+      const tasks = []
+      if (data.currentTask) tasks.push(`<b>${esc(titleCase(data.currentTask.action))}:</b> ${esc(data.currentTask.detail || '')}`)
+      if (data.gatherTask) tasks.push(`<b>Gather:</b> ${esc(data.gatherTask.item)} ${esc(data.gatherTask.amount ?? '')}`)
+      if (data.miningTask) tasks.push(`<b>Mining:</b> ${esc(data.miningTask.style)} ${esc(data.miningTask.item ?? '')}`)
+      if (data.beatMinecraft) tasks.push(`<b>Beat Minecraft:</b> phase ${esc(data.beatMinecraft.phase ?? '?')}`)
+      if (data.smeltingTask) tasks.push(`<b>Smelting:</b> ${esc(data.smeltingTask.input)} -> ${esc(data.smeltingTask.output)} | fuel ${esc(data.smeltingTask.fuelCapacity ?? 0)} / ${esc(data.smeltingTask.fuelRequired ?? data.smeltingTask.amount ?? 0)}${data.smeltingTask.needsFuel ? ' (needs fuel)' : ''}${data.smeltingTask.needsInput ? ' (needs input)' : ''}${data.smeltingTask.blockedByInput ? ` (blocked by ${esc(data.smeltingTask.blockedByInput)})` : ''}${data.smeltingTask.inputError ? ` (${esc(data.smeltingTask.inputError)})` : ''}`)
+      if (data.repairTask) tasks.push(`<b>Tool repair:</b> ${esc(data.repairTask.item)} | ${esc(data.repairTask.durability)} | ${esc(data.repairTask.method)}`)
+      if (data.deathRecovery) tasks.push(`<b>Recovery:</b> ${esc(data.deathRecovery.cause ?? 'unknown')}`)
+      if (data.activeRoute) tasks.push(`<b>Route:</b> ${esc(data.activeRoute)}`)
+      setHtml('taskList', tasks.length ? `<ul>${tasks.map(task => `<li>${task}</li>`).join('')}</ul>` : '<span class="muted">No active task</span>')
+      const log = Array.isArray(data.taskLog) ? data.taskLog : []
+      setHtml('taskLog', log.length ? `<ul>${log.map(task => `<li><b>${esc(titleCase(task.action))}:</b> ${esc(task.detail || '')}<br><span class="muted">${esc(task.target || task.position || task.updatedAt || '')}</span></li>`).join('')}</ul>` : '<span class="muted">No task log yet</span>')
+    }
+
+    function renderInventory(inventory, equipment = {}) {
+      inventory = Array.isArray(inventory) ? inventory : []
+      equipment = equipment || {}
+      const query = document.getElementById('inventorySearch').value.trim().toLowerCase()
+      const filtered = query
+        ? inventory.filter(item => `${item.name || ''} ${item.category || ''}`.toLowerCase().includes(query))
+        : inventory
+      setHtml('inventoryCount', query ? `${filtered.length} of ${inventory.length} slots` : `${inventory.length} slots`)
+      const totalItems = inventory.reduce((total, item) => total + Number(item.count || 0), 0)
+      const equipmentHtml = `<div class="equipment-row">
+        ${equipmentSlot('Helmet', equipment.helmet, '/textures/items/iron_helmet.png')}
+        ${equipmentSlot('Chestplate', equipment.chestplate, '/textures/items/iron_chestplate.png')}
+        ${equipmentSlot('Leggings', equipment.leggings, '/textures/items/iron_leggings.png')}
+        ${equipmentSlot('Boots', equipment.boots, '/textures/items/iron_boots.png')}
+        ${equipmentSlot('Shield place', equipment.offhand, '/textures/gui/sprites/container/slot/shield.png')}
+      </div>`
+      if (query) {
+        const matches = filtered.map(item => inventorySlot(item)).join('')
+        setHtml('inventoryList', matches
+          ? `<div class="inventory-shell">${equipmentHtml}<div class="inventory-summary"><span class="pill">${esc(filtered.length)} matching slots</span><span>${esc(totalItems)} total items</span></div><div class="inventory-wrap"><div class="mc-inventory">${matches}</div></div></div>`
+          : '<span class="muted">No matching inventory items</span>')
+        return
+      }
+      const bySlot = new Map(inventory.map(item => [Number(item.slot), item]))
+      let slots = ''
+      for (let slot = 0; slot < 36; slot++) slots += inventorySlot(bySlot.get(slot), slot)
+      for (const item of inventory.filter(item => Number(item.slot) < 0 || Number(item.slot) > 35)) slots += inventorySlot(item)
+      const categories = inventory.reduce((result, item) => {
+        const category = item.category || 'Other'
+        result[category] = (result[category] || 0) + Number(item.count || 0)
+        return result
+      }, {})
+      const categoryPills = Object.entries(categories).sort(([a], [b]) => a.localeCompare(b)).map(([name, count]) => `<span class="pill">${esc(name)}: ${esc(count)}</span>`).join('')
+      setHtml('inventoryList', `<div class="inventory-shell">${equipmentHtml}<div class="inventory-summary"><span class="pill">${esc(inventory.length)} used slots</span><span class="pill">${esc(totalItems)} items</span>${categoryPills}</div><div class="inventory-wrap"><div class="mc-inventory">${slots}</div></div><span class="muted">Hover an item and click x to drop that stack.</span></div>`)
+    }
+
+    function renderFoodItems(items) {
+      items = Array.isArray(items) ? items : []
+      setHtml('foodItems', items.length
+        ? items.map(item => `<div class="item"><span><b>${esc(item.count)}x</b> ${esc(item.name)}</span><span class="pill">${item.cooked ? 'Cooked' : item.cookable ? 'Raw / cookable' : 'Food'}</span></div>`).join('')
+        : '<span class="muted">No food items</span>')
+    }
+
+    function renderChatHistory(history) {
+      history = Array.isArray(history) ? history : []
+      const latest = history[0]
+      setHtml('latestChatMessage', latest
+        ? `<b>${esc(latest.author || latest.role)}:</b> ${esc(latest.message)}`
+        : 'No chat messages yet')
+      setHtml('latestChatTime', latest ? esc(formatDate(latest.at)) : '')
+      setHtml('chatHistory', history.length
+        ? history.slice(0, 20).map(entry => `<div class="item"><span><b>${esc(entry.author || entry.role)}:</b> ${esc(entry.message)}</span><span class="muted">${esc(formatDate(entry.at))}</span></div>`).join('')
+        : '<span class="muted">No chat messages yet</span>')
+    }
+
+
+    function renderFlyBrain(data = {}) {
+      const fly = data.flyBrain || {}
+      const latest = fly.latest || {}
+      const intent = fly.intent || {}
+      const inputs = fly.inputs || {}
+      const enabled = Boolean(fly.enabled)
+      const ready = Boolean(fly.ready)
+      const badge = document.getElementById('flyBrainBadge')
+      if (badge) {
+        badge.className = `pill fly-led ${enabled && ready ? 'on' : enabled ? 'warn' : 'off'}`
+        badge.textContent = enabled && ready ? 'Online' : enabled ? 'Starting' : 'Off'
+      }
+      setHtml('flyBrainReadout', `
+        <div class="item"><span>Status</span><span>${enabled ? (ready ? 'Enabled / ready' : 'Enabled / starting') : 'Off'}</span></div>
+        <div class="item"><span>PID</span><span>${esc(fly.pid || '-')}</span></div>
+        <div class="item"><span>Phase</span><span>${esc(fly.phase || 1)}</span></div>
+        <div class="item"><span>Mode</span><span>${esc(latest.mode || '-')}</span></div>
+        <div class="item"><span>Urge</span><span>${esc(intent.action || 'idle')}</span></div>
+        <div class="item"><span>Urge priority</span><span>${formatSignal(intent.priority)}</span></div>
+        <div class="item"><span>Reason</span><span>${esc(intent.reason || '-')}</span></div>
+        <div class="item"><span>Nearest</span><span>${inputs.nearest ? `${esc(inputs.nearest.name)} (${esc(inputs.nearest.distance)}m)` : '-'}</span></div>
+        <div class="item"><span>Drop</span><span>${inputs.nearestDrop ? `${esc(inputs.nearestDrop.name)} (${esc(inputs.nearestDrop.distance)}m)` : '-'}</span></div>
+        <div class="item"><span>Block</span><span>${inputs.nearestBlock ? `${esc(inputs.nearestBlock.name)} (${esc(inputs.nearestBlock.distance)}m)` : '-'}</span></div>
+        <div class="item"><span>Inventory</span><span>${esc(inputs.inventoryUsedSlots ?? '-')}/36 slots</span></div>
+        <div class="item"><span>Blocked</span><span>${inputs.blocked ? 'Yes' : 'No'}</span></div>
+        <div class="item"><span>Wind</span><span>${formatSignal(inputs.wind)}</span></div>
+        <div class="item"><span>Build blocks</span><span>${esc(inputs.buildBlocks ?? 0)}</span></div>
+        <div class="item"><span>Forward</span><span>${formatSignal(latest.forward)}</span></div>
+        <div class="item"><span>Yaw</span><span>${formatSignal(latest.yaw)}</span></div>
+        <div class="item"><span>Stop</span><span>${formatSignal(latest.stop)}</span></div>
+        <div class="item"><span>Jump</span><span>${latest.jump ? 'Yes' : 'No'}</span></div>
+        <div class="item"><span>Spikes</span><span>${esc(latest.spikes ?? '-')}</span></div>
+        <div class="item"><span>Active neurons</span><span>${esc(latest.active ?? '-')}</span></div>
+        <div class="item"><span>Last error</span><span>${esc(fly.lastError || 'OK')}</span></div>
+      `)
+      if (latest && Object.keys(latest).length) {
+        flyBrainSeries.push({
+          forward: Number(latest.forward || 0),
+          yaw: Number(latest.yaw || 0),
+          stop: Number(latest.stop || 0),
+          spikes: Number(latest.spikes || 0),
+          urge: Number(intent.priority || 0)
+        })
+        while (flyBrainSeries.length > flyBrainMaxPoints) flyBrainSeries.shift()
+      }
+      drawFlyBrainChart()
+    }
+
+    function formatSignal(value) {
+      const number = Number(value)
+      return Number.isFinite(number) ? number.toFixed(2) : '-'
+    }
+
+    function drawFlyBrainChart() {
+      const canvas = document.getElementById('flyBrainChart')
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      const width = Math.max(320, Math.floor(rect.width || canvas.width))
+      const height = Math.max(180, Math.floor(rect.height || canvas.height))
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr
+        canvas.height = height * dpr
+      }
+      const ctx = canvas.getContext('2d')
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = '#06101c'
+      ctx.fillRect(0, 0, width, height)
+      ctx.strokeStyle = '#22334b'
+      ctx.lineWidth = 1
+      for (let i = 1; i < 4; i++) {
+        const y = (height / 4) * i
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(width, y)
+        ctx.stroke()
+      }
+      if (!flyBrainSeries.length) {
+        ctx.fillStyle = '#9aa9bd'
+        ctx.font = '14px ui-monospace, monospace'
+        ctx.fillText('Waiting for flybrain data...', 18, 34)
+        return
+      }
+      const maxSpikes = Math.max(1, ...flyBrainSeries.map(point => point.spikes))
+      plotSeries(ctx, width, height, '#6ee7b7', point => point.forward)
+      plotSeries(ctx, width, height, '#7dd3fc', point => (point.yaw + 1) / 2)
+      plotSeries(ctx, width, height, '#fbbf24', point => point.stop)
+      plotSeries(ctx, width, height, '#fb7185', point => point.spikes / maxSpikes)
+      plotSeries(ctx, width, height, '#c084fc', point => point.urge || 0)
+    }
+
+    function plotSeries(ctx, width, height, color, getter) {
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      flyBrainSeries.forEach((point, index) => {
+        const x = flyBrainSeries.length === 1 ? width : (index / (flyBrainSeries.length - 1)) * width
+        const y = height - Math.max(0, Math.min(1, getter(point))) * height
+        if (index === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      })
+      ctx.stroke()
+    }    function renderBotSettings(settings) {
+      if (!settings || settingsInitialized) return
+      document.getElementById('settingsHost').value = settings.host || ''
+      document.getElementById('settingsPort').value = settings.port || 25565
+      document.getElementById('settingsUsername').value = settings.username || ''
+      document.getElementById('settingsAuth').value = settings.auth || 'microsoft'
+      document.getElementById('settingsVersion').innerHTML = (settings.supportedVersions || [settings.version]).map(version => `<option value="${esc(version)}">${esc(version)}</option>`).join('')
+      document.getElementById('settingsVersion').value = settings.version || ''
+      document.getElementById('settingsWorldId').value = settings.worldId || 'default'
+      document.getElementById('settingsDataProfile').value = settings.dataProfile || 'default'
+      document.getElementById('settingsOwnerPlayer').value = settings.ownerPlayer || ''
+      document.getElementById('settingsOfflineSkinMode').value = settings.offlineSkinMode || 'off'
+      document.getElementById('settingsOfflineSkinValue').value = settings.offlineSkinValue || ''
+      document.getElementById('settingsOfflineSkinVariant').value = settings.offlineSkinVariant || 'classic'
+      renderOfflineSkinPreview()
+      renderOwnerPreview()
+      whitelistedPlayers = Array.isArray(settings.whitelistedPlayers) ? [...settings.whitelistedPlayers] : []
+      renderWhitelist()
+      const overrides = Object.entries(settings.environmentOverrides || {}).filter(([, enabled]) => enabled).map(([name]) => name)
+      if (overrides.length) setHtml('settingsStatus', `Environment overrides active: ${esc(overrides.join(', '))}`)
+      settingsInitialized = true
+    }
+
+    socket.on('update', data => {
+      latestData = data || {}
+      const hp = Number(latestData.health)
+      const food = Number(latestData.food)
+      setHtml('health', Number.isFinite(hp) ? `${Math.round(hp)} / 20` : '?')
+      setHtml('food', Number.isFinite(food) ? `${Math.round(food)} / 20` : '?')
+      document.getElementById('healthBar').style.width = `${percent(hp)}%`
+      document.getElementById('foodBar').style.width = `${percent(food)}%`
+      setHtml('xp', esc(latestData.xp ?? '?'))
+      setHtml('mode', esc(formatMode(latestData.mode)))
+      setHtml('pvp', latestData.pvp ? 'ON' : 'OFF')
+      setHtml('autonomy', latestData.autonomy?.enabled ? `ON${latestData.autonomy?.focus ? ` ${esc(latestData.autonomy.focus)}` : ''}` : 'OFF')
+      setHtml('position', formatPosition(latestData.position))
+      setHtml('connected', latestData.connected ? 'ONLINE' : 'OFFLINE')
+      setHtml('connectionText', latestData.connected ? 'ONLINE' : 'OFFLINE')
+      document.getElementById('connectedBadge').classList.toggle('offline', !latestData.connected)
+
+      if (latestData.deathRecovery) {
+        setHtml('recovery', `Recovery active: ${esc(latestData.deathRecovery.attempts ?? 0)} attempts, ${esc(latestData.deathRecovery.pathFailures ?? 0)} path failures. Cause: ${esc(latestData.deathRecovery.cause ?? 'unknown')}`)
+      } else if (latestData.smeltingTask) {
+        const furnace = latestData.smeltingTask.furnace
+        setHtml('recovery', `Smelting active: ${esc(latestData.smeltingTask.amount)}x ${esc(latestData.smeltingTask.input)} -> ${esc(latestData.smeltingTask.output)}${furnace ? ` at ${esc(furnace.x)} ${esc(furnace.y)} ${esc(furnace.z)}` : ''}. Fuel: ${esc(latestData.smeltingTask.fuelCapacity ?? 0)} / ${esc(latestData.smeltingTask.fuelRequired ?? latestData.smeltingTask.amount ?? 0)}${latestData.smeltingTask.needsFuel ? ' (needs more fuel)' : ''}${latestData.smeltingTask.needsInput ? ' (input missing)' : ''}${latestData.smeltingTask.blockedByInput ? ` (blocked by ${esc(latestData.smeltingTask.blockedByInput)})` : ''}${latestData.smeltingTask.inputError ? ` (${esc(latestData.smeltingTask.inputError)})` : ''}.`)
+      } else {
+        setHtml('recovery', '<span class="muted">No recovery active</span>')
+      }
+      const debug = latestData.furnaceDebug
+      setHtml('furnaceDebug', debug
+        ? `<div class="item"><span>Status</span><span>${esc(debug.status)}</span></div><div class="item"><span>Input slot</span><span>${esc(debug.inputSlot ? `${debug.inputSlot.count}x ${debug.inputSlot.name}` : 'empty')}</span></div><div class="item"><span>Fuel slot</span><span>${esc(debug.fuelSlot ? `${debug.fuelSlot.count}x ${debug.fuelSlot.name}` : 'empty')}</span></div><div class="item"><span>Output slot</span><span>${esc(debug.outputSlot ? `${debug.outputSlot.count}x ${debug.outputSlot.name}` : 'empty')}</span></div><div class="item"><span>Attempts</span><span>${esc(debug.inputAttempts ?? 0)}</span></div><div class="item"><span>Last error</span><span>${esc(debug.lastTransferError || 'none')}</span></div><div class="item"><span>Blocked furnace</span><span>${esc(debug.temporarilyBlocked ? 'yes' : 'no')}</span></div>`
+        : '<span class="muted">No furnace activity</span>')
+
+      const planner = latestData.planner
+      setHtml('planner', planner ? `<div class="item"><span>Goal</span><span>${esc(planner.goal)}</span></div><div class="item"><span>Next</span><span>${esc(planner.nextAction)}</span></div><p>${esc(planner.reason || '')}</p>` : '<span class="muted">No planner data</span>')
+      renderWorldMemory(latestData.worldMemory)
+      renderTasks(latestData)
+      renderCombatStats(latestData.combatMetrics)
+      renderFoodItems(latestData.foodItems)
+      renderChatHistory(latestData.chatHistory)
+      renderFlyBrain(latestData)
+      renderBotSettings(latestData.botSettings)
+      if (latestData.viewer?.port || latestData.viewer?.url) {
+        const frame = document.getElementById('botPov')
+        const viewerUrl = updateViewerLink(latestData)
+        if (!frame.src.startsWith(viewerUrl)) frame.src = viewerUrl
+      }
+      document.getElementById('viewerOffline').classList.toggle('hidden', Boolean(latestData.viewer?.enabled))
+      const pathStatus = latestData.pathStatus?.status || 'idle'
+      setHtml('pathStatus', `Path ${esc(pathStatus)}${latestData.pathStatus?.points ? ` (${esc(latestData.pathStatus.points)} pts)` : ''}`)
+
+      const quickCommands = ['ai follow', 'ai stop', 'ai rejoin', 'ai status', 'ai info', 'ai pvp', 'ai sort', 'ai viewer on', 'ai viewer off', 'ai flybrain on', 'ai flybrain status']
+      setHtml('quick', quickCommands.map(command => `<button type="button" onclick="fillCommand('${esc(command)}')">${esc(command)}</button>`).join(''))
+
+      renderInventory(latestData.inventory, latestData.equipment)
+
+      knownRecipes = Array.isArray(latestData.recipeBook?.recipes) ? [...latestData.recipeBook.recipes] : (Array.isArray(latestData.knownRecipes) ? [...latestData.knownRecipes].sort() : [])
+      discoveredRecipes = latestData.discoveredRecipes || {}
+      renderRecipes()
+      renderDiscoveredRecipes()
+      renderKnowledge(latestData)
+      renderItemsKnowledge(latestData)
+
+      const commands = [...new Set([...(Array.isArray(latestData.commands) ? latestData.commands : []), ...Object.keys(commandInfo)])]
+      setHtml('commandsList', commands.map(command => {
+        const [category, description] = commandInfo[command] || ['Other', 'Runs this command in Minecraft.']
+        return `<div class="card command-card"><span class="pill">${esc(category)}</span><code>${esc(command)}</code><p>${esc(description)}</p><button type="button" onclick="fillCommand('${esc(command)}')">Use command</button></div>`
+      }).join(''))
+    })
+
+    socket.on('bot-settings:result', result => {
+      setHtml('settingsStatus', esc(result?.message || (result?.ok ? 'Settings saved.' : 'Could not save settings.')))
+    })
+    socket.on('runtime-data:result', result => {
+      setHtml('backupStatus', esc(result?.message || 'Runtime data action finished.'))
+    })
+  </script>
+</body>
+</html>
+

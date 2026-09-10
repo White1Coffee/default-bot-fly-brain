@@ -1,0 +1,30 @@
+{
+  "host": "localhost",
+  "port": 25565,
+  "username": "default-bot",
+  "auth": "offline",
+  "version": "1.21.4",
+  "worldId": "default",
+  "dataProfile": "default",
+  "ownerPlayer": "",
+  "offlineSkinMode": "off",
+  "offlineSkinValue": "",
+  "offlineSkinVariant": "classic",
+  "eliteMode": true,
+  "whitelistedPlayers": [],
+  "learning": {
+    "enabled": true,
+    "curriculumEnabled": true,
+    "maxSkillRetries": 3,
+    "taskTimeoutMs": 120000,
+    "memoryResultLimit": 5,
+    "minimumSkillSuccessRate": 0.7,
+    "minimumCurriculumSuccesses": 3,
+    "experienceDeduplicationWindowMs": 3600000
+  },
+  "safety": {
+    "minimumHealth": 10,
+    "minimumFood": 8,
+    "fleeDistance": 16
+  }
+}

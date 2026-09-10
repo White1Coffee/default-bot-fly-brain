@@ -1,0 +1,23 @@
+node_modules/
+external/fly-brain-minecraft/
+external/fly-brain-build/
+microsoft-auth/
+backups/
+knowledge-backups/
+profiles/
+.bot-coordination/
+fase.json
+
+# Runtimegegevens blijven lokaal.
+ai-memory.json
+ai-recipes.json
+knowledge/*.json
+worlds/*.json
+*.log
+*.pid
+*.tmp
+.env
+bot-settings.json
+
+!knowledge/.gitkeep
+!worlds/.gitkeep

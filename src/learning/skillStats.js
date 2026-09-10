@@ -1,0 +1,6 @@
+'use strict'
+class SkillStats{
+ constructor(store){this.store=store}
+ record(skill,result,context={}){const all=this.store.data.skillStats;const s=all[skill.name]||={version:skill.version||1,executions:0,successes:0,failures:0,totalDurationMs:0,recent:[],lastErrorCodes:[],byDimension:{},byBiome:{},byTool:{}};if(s.version!==Number(skill.version||1))Object.assign(s,{version:Number(skill.version||1),executions:0,successes:0,failures:0,totalDurationMs:0,recent:[]});s.executions++;result.success?s.successes++:s.failures++;s.totalDurationMs+=Number(result.metrics?.durationMs||0);s.recent.push(Boolean(result.success));s.recent=s.recent.slice(-20);if(result.reason){s.lastErrorCodes.push(result.reason);s.lastErrorCodes=s.lastErrorCodes.slice(-10)};for(const [map,key] of [[s.byDimension,context.dimension],[s.byBiome,context.biome],[s.byTool,context.requiredTool]])if(key){const e=map[key]||={executions:0,successes:0};e.executions++;if(result.success)e.successes++}s.successRate=s.executions?s.successes/s.executions:0;s.averageDurationMs=s.executions?s.totalDurationMs/s.executions:0;s.recentSuccessStreak=[...s.recent].reverse().findIndex(v=>!v);if(s.recentSuccessStreak<0)s.recentSuccessStreak=s.recent.length;s.lastUsed=new Date().toISOString();this.store.save();return s}
+}
+module.exports={SkillStats}
