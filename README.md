@@ -6,6 +6,7 @@ Dit is een zelfstandige versie van de productie-bot. De repository heeft geen Hu
 
 - Windows, Linux of macOS
 - Node.js 22 of nieuwer
+- JDK 21 of nieuwer voor `ai flybrain on` en de FlyBrain bridge
 - Een Minecraft Java-server die past bij de ingestelde authenticatiemethode
 
 ## Installeren
@@ -86,3 +87,25 @@ npm run merge-knowledge -- pad/naar/knowledge-a pad/naar/knowledge-b pad/naar/me
 ```
 
 Stop bots voordat knowledgebestanden worden vervangen of gemerged.
+
+## FlyBrain controleren
+
+FlyBrain-mode gebruikt de lokale connectoomdata in `external/fly-brain-minecraft` en de project-eigen bridge in `src/flybrain/FlyBrainBridge.java`.
+
+```bash
+npm run flybrain:verify
+npm run flybrain:test
+npm run flybrain:bench
+npm run flybrain:survival
+```
+
+`flybrain:verify` controleert JDK 21+, de connectoom SHA-256, compileert de bridge en controleert dat de class bestaat. `flybrain:test` draait vaste scenarioframes door de bridge. `flybrain:bench` meet meerdere thread-instellingen via de bridge zodat je kunt zien of het brein realtime genoeg draait.
+
+Voor een eerlijke sensor-motor test zonder MinecraftExecutive kun je de bot starten met:
+
+```powershell
+$env:FLYBRAIN_STRICT_SENSORIMOTOR='1'
+npm start
+```
+
+In die modus blijven craften, mining, inventory en pathfinding uit de flybrain-executive weg; alleen de directe sensor -> connectoom -> motorroute blijft actief.

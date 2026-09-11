@@ -83,3 +83,42 @@ Fase 4 maakt flybrain mode praktischer voor langere sessies. De driver geeft nu 
 - `rest`: stopt beweging wanneer health/food veilig zijn en er geen sterke prikkel is.
 
 Dit betekent niet dat het biologische connectoom zelf Minecraft-recipes begrijpt. De connectoom-output en sensoren leveren reflexen en drang; de Node/Mineflayer-adapter vertaalt die naar veilige Minecraft-acties.
+
+## MOET-checklist implementatie
+
+Deze ronde heeft de flybrain-integratie dichter bij de gewenste architectuur gebracht:
+
+- De bridge staat nu project-eigen in `src/flybrain/FlyBrainBridge.java`; de genegeerde upstream-map blijft alleen bron voor de officiële brain classes en connectoomdata.
+- De bridge gebruikt per tick de volgorde `SensoryFrame` vullen -> `SensoryEncoders.apply()` -> `LifNetwork.runMs(50)` -> `MotorDecoder.update()` -> `LifNetwork.endTick(50)`.
+- De Node-driver draait op 50 ms en berekent yaw/pitch rates met gemeten delta-tijd.
+- Java blijft persistent draaien: het connectoom wordt bij `ai flybrain on` geladen en daarna hergebruikt tot de bridge stopt.
+- Retina-input wordt nu gevuld vanuit Mineflayer-raycasts over een grof gezichtsveld. Meerdere objecten worden tegelijk doorgegeven.
+- Visuele objecten gebruiken line-of-sight raycasts, expansion op basis van hoekgrootteverschil en angular speed op basis van azimuthverschil.
+- Geur komt nu van echte Minecraft-bronnen zoals food drops, dieren en crop-blokken. Honger is geen geur meer.
+- Smaak wordt alleen tijdelijk geactiveerd na een echte eetactie via `recordTaste()`.
+- Touch gebruikt nu Minecraft-contactsignalen zoals muur voor het hoofd, block onder voeten, water, cobweb, damage en airborne state.
+- `flyLike` staat niet meer automatisch aan voor spelers.
+- De bridge stuurt extra MotorDecoder-output terug: `flightPower`, `flightYaw`, `landing`, `wingMotor`, `feed`, `groom*`, `courtship`, `song`, `legMotor`, `legMotorAsym`, `wallMs` en `realtimeFactor`.
+- De motoradapter gebruikt feed, landing, flight en groom: feed kan echt eten, landing remt springen, escape sprint/jumpt, groom swingt de arm als zichtbare/debugactie.
+- De MinecraftExecutive is expliciet gescheiden in `computeMinecraftExecutiveIntent()`. Crafting, inventory, recipes en abstracte Minecraft-taken blijven daar, niet in het biologische connectoom.
+- Pathfinder blijft onder het brein beschikbaar voor lange doelen zoals eten zoeken, vluchten, mining en exploratie.
+- Mining/crafting/inventory/combat gebruiken de bestaande veilige Mineflayer-skills, terwijl de flybrain-sensoren gevaar, zicht, beweging, damage en contact blijven bijwerken.
+- De driver heeft een watchdog voor verdwenen/te trage brainframes, slechte JSON en Java-exit; bij problemen stopt hij controls.
+- De HUD toont nu tick/latency/realtime-factor plus feed/flight/landing/groom/motorstatus.
+- `tools/verify-fly-brain.ps1`, `tools/flybrain-scenarios.ps1` en `tools/bench-fly-brain.ps1` controleren installatie, scenarioframes en performance.
+- `package.json` heeft `npm run flybrain:verify`, `npm run flybrain:test` en `npm run flybrain:bench`.
+- De README vermeldt JDK 21+ en de FlyBrain controlescripts.
+
+Nog steeds belangrijk: Minecraft-integratietests met echte werelden blijven afhankelijk van een draaiende Minecraft-server. De scripts controleren nu de bridge en scenarioframes zonder server; echte survivalduurtests moet je draaien met een lokale testwereld.
+
+## Aanbevolen uitbreidingen uit make.md
+
+De resterende adviespunten zijn ook verwerkt:
+
+- Wind/self-motion gebruikt nu verschillende linker- en rechterantenne-signalen op basis van snelheid, kijkrichting en zijwaartse flow.
+- Tilt/gravity, airborne, legsOnGround en wingbeat worden naar `SensoryFrame` gestuurd.
+- Minecraft-geluiden worden vertaald naar `soundLow`, `soundHigh` en `song` via Mineflayer sound-events.
+- De Flybrain-tab toont nu echte sensorinput: retina sample count, zichtbare objecten, geurbron/richting, taste, touch, wind en brain timing.
+- `tools/survival-fly-brain.ps1` is toegevoegd als langere survival-monitor. Die gebruikt `/api/status` en schrijft meetresultaten weg met tijdstempel.
+- Het npm-pakket is hetzelfde gebleven; er is geen nieuwe package-naam of aparte brain-package gemaakt.
+- `FLYBRAIN_STRICT_SENSORIMOTOR=1` schakelt MinecraftExecutive-intenties uit om het einddoel eerlijk te testen: Minecraft-sensoren -> officiële encoders -> MaleCNS -> officiële motor decoder -> Mineflayer controls.

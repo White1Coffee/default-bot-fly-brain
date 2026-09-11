@@ -8604,6 +8604,17 @@ bot.on('path_stop', () => {
   state.pathUpdatedAt = appTimestamp()
 })
 
+bot.on('soundEffectHeard', (soundName, position, volume) => {
+  flyBrainDriver.recordSound(soundName, volume)
+})
+
+bot.on('hardcodedSoundEffectHeard', (soundName, position, volume) => {
+  flyBrainDriver.recordSound(soundName, volume)
+})
+
+bot.on('noteHeard', () => {
+  flyBrainDriver.recordSound('note', 1)
+})
 bot.on('spawn', async () => {
   if (!state.recovering || !state.deathRecovery) return
   const recovery = state.deathRecovery
@@ -8667,7 +8678,7 @@ bot.on('physicsTick', () => {
 })
 
 function updateHud() {
-  io.emit('update', {
+  const hudPayload = {
     botUsername: bot.username || null,
     connected: minecraftConnected,
     health: bot.health,
@@ -8789,8 +8800,14 @@ function updateHud() {
       }
     },
     commands
-  })
+  }
+  state.lastHudPayload = hudPayload
+  io.emit('update', hudPayload)
 }
+
+app.get('/api/status', (request, response) => {
+  response.json(state.lastHudPayload || { connected: minecraftConnected, flyBrain: flyBrainDriver.status() })
+})
 
 addRuntimeInterval(updateHud, hudIntervalMs)
 

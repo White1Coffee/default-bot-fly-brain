@@ -456,7 +456,7 @@
       'ai viewer off': ['Viewer', 'Stops the first-person AI POV viewer.'],
       'ai flybrain on': ['Flybrain', 'Lets the fly connectome control movement/reflexes.'],
       'ai flybrain off': ['Flybrain', 'Stops flybrain control and returns to normal commands.'],
-      'ai flybrain status': ['Flybrain', 'Shows bridge status, motor mode, forward/yaw values and spike count.'],
+      'ai flybrain status': ['Flybrain', 'Shows bridge status, motor mode, latency, realtime factor, feed, flight and spike count.'],
       'ai pickup items': ['Inventory', 'Moves to dropped items nearby.'],
       'ai storage': ['Inventory', 'Stores inventory in a nearby chest or barrel.'],
       'ai dump junk': ['Inventory', 'Drops or stores low-value junk items.'],
@@ -914,10 +914,27 @@
         <div class="item"><span>Blocked</span><span>${inputs.blocked ? 'Yes' : 'No'}</span></div>
         <div class="item"><span>Wind</span><span>${formatSignal(inputs.wind)}</span></div>
         <div class="item"><span>Build blocks</span><span>${esc(inputs.buildBlocks ?? 0)}</span></div>
+        <div class="item"><span>Retina samples</span><span>${esc(inputs.retinaSamples ?? '-')}</span></div>
+        <div class="item"><span>Visual objects</span><span>${esc(inputs.visualObjectCount ?? '-')}</span></div>
+        <div class="item"><span>Odor</span><span>${inputs.odor?.source ? `${esc(inputs.odor.source.name)} (${esc(inputs.odor.source.distance)}m)` : '-'}</span></div>
+        <div class="item"><span>Odor bearing</span><span>${esc(inputs.odor?.bearing ?? '-')}</span></div>
+        <div class="item"><span>Taste</span><span>${inputs.taste?.active ? 'Active' : '-'}</span></div>
+        <div class="item"><span>Touch head</span><span>${formatSignal(inputs.touch?.head)}</span></div>
+        <div class="item"><span>Touch legs</span><span>${formatSignal(inputs.touch?.legs)}</span></div>
+        <div class="item"><span>Sound low</span><span>${formatSignal(inputs.touch?.soundLow)}</span></div>
+        <div class="item"><span>Sound high</span><span>${formatSignal(inputs.touch?.soundHigh)}</span></div>
         <div class="item"><span>Forward</span><span>${formatSignal(latest.forward)}</span></div>
         <div class="item"><span>Yaw</span><span>${formatSignal(latest.yaw)}</span></div>
         <div class="item"><span>Stop</span><span>${formatSignal(latest.stop)}</span></div>
         <div class="item"><span>Jump</span><span>${latest.jump ? 'Yes' : 'No'}</span></div>
+        <div class="item"><span>Feed</span><span>${formatSignal(latest.feed)}</span></div>
+        <div class="item"><span>Flight</span><span>${formatSignal(latest.flightPower)}</span></div>
+        <div class="item"><span>Landing</span><span>${formatSignal(latest.landing)}</span></div>
+        <div class="item"><span>Groom</span><span>${formatSignal(latest.groom)}</span></div>
+        <div class="item"><span>Brain wall ms</span><span>${esc(fly.telemetry?.lastWallMs ?? latest.wallMs ?? '-')}</span></div>
+        <div class="item"><span>Realtime factor</span><span>${esc(fly.telemetry?.lastRealtimeFactor ?? latest.realtimeFactor ?? '-')}</span></div>
+        <div class="item"><span>Latency</span><span>${esc(fly.telemetry?.lastLatencyMs ?? '-')} ms</span></div>
+        <div class="item"><span>Frames</span><span>${esc(fly.telemetry ? `${fly.telemetry.receivedFrames}/${fly.telemetry.sentFrames}` : '-')}</span></div>
         <div class="item"><span>Spikes</span><span>${esc(latest.spikes ?? '-')}</span></div>
         <div class="item"><span>Active neurons</span><span>${esc(latest.active ?? '-')}</span></div>
         <div class="item"><span>Last error</span><span>${esc(fly.lastError || 'OK')}</span></div>
